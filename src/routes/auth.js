@@ -1,7 +1,7 @@
 const express         = require('express');
 const bcrypt          = require('bcryptjs');
 const jwt             = require('jsonwebtoken');
-const nodemailer      = require('nodemailer');
+const { Resend }      = require('resend');
 const { OAuth2Client } = require('google-auth-library');
 const pool            = require('../config/db');
 const { authenticate } = require('../middleware/auth');
@@ -12,16 +12,8 @@ const router = express.Router();
 // Google OAuth Client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
 
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASSWORD,
-  },
-});
+// Resend email client (pengganti Nodemailer)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper: generate JWT + simpan ke DB
 const generateToken = async (user, deviceInfo = null, fcmToken = null) => {
@@ -446,7 +438,7 @@ router.post('/forgot-password', async (req, res) => {
       [email, hashed]
     );
 
-    await transporter.sendMail({
+    await resend.emails.send({
       from:    process.env.MAIL_FROM,
       to:      email,
       subject: 'Kode Reset Password - GudangConnect',
